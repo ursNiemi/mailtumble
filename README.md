@@ -41,13 +41,17 @@ In other words we needed:
 ## Structure
 
 - receive.js is Lambda function that parses incoming SES emails, checks if recipients exist in our user repository. Valid emails will be
-placed in the outgoing email queue
+placed in the outgoing email queue and can be processed any time later
 
-- send-out.js polls a queue of outgoing emails and sends them out according to a dynamically set pace
+- send-out.js polls a queue of outgoing emails and sends them out according to a dynamically calculated pace. You can easily replace this
+part with your own worker (eg. [shoryuken](https://github.com/phstc/shoryuken))
 
 - api-view.is is an example of an API gateway Lambda that responds to lookup queries made by `receive.js`
 
 ## Features
+
+- Choosing the pace (concurrency) dynamically based on the queue size. If the queue is empty, run just one worker thread and wait for
+messages. If the queue is large, run as many threads as you can afford (according to your current SES send rate).
 
 - Retry on failure (eg. hitting throttle/rate limits when sending out)
 
