@@ -5,6 +5,10 @@ AWS Lambda SES Email Forwarder
 
 Receive incoming mail via AWS SES, then redirect (forward) it according to specified rules via any mail service including AWS SES.
 
+Our flow is very simple:
+
+![MailTumble flow](https://www.mysenko.com/images/mailtumble-flow.png)
+
 ## Why?
 
 Why could not we just use [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder)?
@@ -28,6 +32,8 @@ In other words we needed:
 - An ability to lookup email aliases in an external repository
 
 - A way to de-couple receiving and sending
+
+- A way to process bounces and spam complaints
 
 ## Structure
 
