@@ -1,9 +1,11 @@
 # mailtumble
+[![Build Status](https://travis-ci.org/PoweredLocal/mailtumble.svg?branch=master)](https://travis-ci.org/PoweredLocal/mailtumble)
+
 AWS Lambda SES Email Forwarder
 
 ## Overview
 
-Receive incoming mail via AWS SES, then redirect (forward) it according to specified rules via any mail service including AWS SES.
+Receive incoming mail via AWS SES, then redirect (forward) it according to specified rules via any mail service including AWS SES itself.
 
 Our flow is very simple:
 
@@ -11,7 +13,8 @@ Our flow is very simple:
 
 ## Why?
 
-Why could not we just use [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder)?
+Why stumbled upon [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) but we could not
+really use it.
 
 The idea of forwarding emails right away based on SES triggers is nice but it only works for very small setups. What if you
 receive 50,000 messages in one minute (eg. one of your users is sending out a marketing campaign)?
