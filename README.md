@@ -13,7 +13,9 @@ Our flow is very simple:
 
 ## Why?
 
-Why stumbled upon [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) but we could not
+We have a [service](https://poweredlocal.com) that allows our customers to collect email addresses (as a byproduct of providing free WiFi) and use those for marketing purposes. But we wanted to further protect the owners of those email addresses from being over marketed too & having their personal information mishandled or insecurely stored. So we wanted a way where we could pass onto our customers a masked version of the email addresses - so if its ever abused, we could put a hold on it. Sort of how you email back and forth with an eBay seller.
+
+We stumbled upon [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) but we could not
 really use it.
 
 The idea of forwarding emails right away based on SES triggers is nice but it only works for very small setups. What if you
