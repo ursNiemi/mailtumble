@@ -3,45 +3,78 @@
 const AWS = require('aws-sdk')
 const SQS = new AWS.SQS({ apiVersion: '2012-11-05' })
 const SES = new AWS.SES()
+const S3 = new AWS.S3({ signatureVersion: "v4" })
 
 const QUEUE_URL = process.env.QUEUE_URL
 const MAXIMUM_SEND_RATE = 14
+const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME
+const S3_KEY_PREFIX = process.env.S3_KEY_PREFIX || ''
 
-function sendEmail(message) {
-    console.log(`Sending an email to: ${message.recipients.join(',')}`)
+function sendEmail(message, recipients, originalRecipient) {
+    console.log(`Sending an email to: ${recipients.join(',')}`)
 
     var params = {
-        Destinations: message.recipients,
-        Source: message.originalRecipient,
+        Destinations: recipients,
+        Source: originalRecipient,
         RawMessage: {
-            Data: message.emailData
+            Data: message
         }
     }
 
     return new Promise(function(resolve, reject) {
         SES.sendRawEmail(params, function(err) {
+            if (err) console.log(err)
             if (err) return reject(new Error("Error: Email sending failed."))
 
-            resolve(`Sent email successfully to ${message.recipients.join(',')}`)
+            resolve(`Sent email successfully to ${recipients.join(',')}`)
         })
     })
 }
 
-function processMessage(message) {
-    return sendEmail(message).then(() => {
-        const params = {
-            QueueUrl: QUEUE_URL,
-            ReceiptHandle: message.ReceiptHandle,
-        };
+function fetchMessage(messageId) {
+    const key = `${S3_KEY_PREFIX}${messageId}`
 
-        return new Promise((resolve, reject) => {
-            SQS.deleteMessage(params, (err) => {
+    return new Promise(function(resolve, reject) {
+        // Load the raw email from S3
+        S3.getObject(
+            {
+                Bucket: S3_BUCKET_NAME,
+                Key: key
+            },
+            function(err, result) {
                 if (err) {
-                    reject(err)
-                } else {
-                    resolve()
+                    console.log(err)
+                    return reject(new Error(`Error: Failed to load message body from S3: ${key}`))
                 }
-            });
+
+                const match = result.Body.toString().match(/^((?:.+\r?\n)*)(\r?\n(?:.*\s+)*)/m);
+                const body = match && match[2] ? match[2] : '';
+
+                return resolve(body)
+            }
+        )
+    })
+}
+
+function processMessage(message) {
+    const decoded = JSON.parse(message.Body)
+
+    return fetchMessage(decoded.messageId).then((body) => {
+        return sendEmail(decoded.header + body, decoded.recipients, decoded.originalRecipient).then(() => {
+            const params = {
+                QueueUrl: QUEUE_URL,
+                ReceiptHandle: message.ReceiptHandle,
+            };
+
+            return new Promise((resolve, reject) => {
+                SQS.deleteMessage(params, (err) => {
+                    if (err) {
+                        reject(err)
+                    } else {
+                        resolve()
+                    }
+                });
+            })
         })
     })
 }
@@ -75,7 +108,7 @@ function pollIteration(results) {
             if (! data.Messages) {
                 setTimeout(() => resolve(results.concat('Queue seems to be empty')), delay)
             } else {
-                const promises = data.Messages.map((message) => processMessage(message));
+                const promises = data.Messages.map((message) => () => processMessage(message));
                 console.log(`${data.Messages.length} jobs received from the queue`)
 
                 // complete when all invocations have been made

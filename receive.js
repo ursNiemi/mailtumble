@@ -51,6 +51,7 @@ function rewriteRecipients(data) {
     var promises = []
 
     data.originalRecipients = data.recipients
+
     data.recipients.forEach(function(origEmail) {
         promises.push(
             new Promise((resolve, reject) => {
@@ -69,7 +70,6 @@ function rewriteRecipients(data) {
                     res.on('data', (chunk) => chunks.push(chunk));
                     res.on('end', () => {
                         let body = chunks.join('')
-                        console.log('Body', res.statusCode)
                         let data = JSON.parse(body)
                         resolve(data.email)
                     });
@@ -92,10 +92,12 @@ function rewriteRecipients(data) {
                 data.originalRecipients.join(", "),
                 level: "info"
             })
+
             return data.callback()
         }
 
         data.recipients = newRecipients
+        data.originalRecipient = data.originalRecipients[0]
 
         return data
     });
@@ -234,7 +236,9 @@ function enqueueMessage(data) {
     var params = {
         MessageBody: JSON.stringify({
             header: data.newHeader,
-            messageId: data.email.messageId
+            messageId: data.email.messageId,
+            recipients: data.recipients,
+            originalRecipient: data.originalRecipient
         }),
         QueueUrl: QUEUE_URL
     }
@@ -254,7 +258,7 @@ function enqueueMessage(data) {
             if (err) {
                 data.log({
                     level: "error",
-                    message: "sendMessage() returned error.",
+                    message: "enqueueMessage() returned error.",
                     error: err,
                     stack: err.stack
                 })
@@ -264,7 +268,7 @@ function enqueueMessage(data) {
 
             data.log({
                 level: "info",
-                message: "sendMessage() successful.",
+                message: "enqueueMessage() successful.",
                 result: result
             })
 
