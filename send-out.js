@@ -23,10 +23,11 @@ function sendEmail(message, recipients, originalRecipient) {
 
     return new Promise(function(resolve, reject) {
         SES.sendRawEmail(params, function(err) {
-            if (err) console.log(err)
-            if (err) return reject(new Error("Error: Email sending failed."))
-
-            resolve(`Sent email successfully to ${recipients.join(',')}`)
+            if (err) {
+                reject("Error: Email sending failed.")
+            } else {
+                resolve(`Sent email successfully to ${recipients.join(',')}`)
+            }
         })
     })
 }
@@ -59,8 +60,12 @@ function fetchMessage(messageId) {
 function processMessage(message) {
     const decoded = JSON.parse(message.Body)
 
-    return fetchMessage(decoded.messageId).then((body) => {
-        return sendEmail(decoded.header + body, decoded.recipients, decoded.originalRecipient).then(() => {
+    return fetchMessage(decoded.messageId)
+        .then((body) => {
+            return sendEmail(decoded.header + body, decoded.recipients, decoded.originalRecipient)})
+        .then((result) => {
+            console.log(result)
+
             const params = {
                 QueueUrl: QUEUE_URL,
                 ReceiptHandle: message.ReceiptHandle,
@@ -71,12 +76,17 @@ function processMessage(message) {
                     if (err) {
                         reject(err)
                     } else {
-                        resolve()
+                        resolve('Deleted message from the queue')
                     }
                 });
             })
         })
-    })
+        .then((result) => {
+            console.log(result)
+        })
+        .catch((e) => {
+            console.log('Error occurred', e)
+        })
 }
 
 function getQueueData() {

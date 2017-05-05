@@ -37,6 +37,7 @@ function parseEvent(data) {
 
     data.email = data.event.Records[0].ses.mail
     data.recipients = data.event.Records[0].ses.receipt.recipients
+
     return Promise.resolve(data)
 }
 
@@ -158,7 +159,7 @@ function fetchMessage(data) {
 function processHeaders(data) {
     var match = data.emailData.match(/^((?:.+\r?\n)*)(\r?\n(?:.*\s+)*)/m)
     var header = match && match[1] ? match[1] : data.emailData
-
+    
     // Add "Reply-To:" with the "From" address if it doesn't already exists
     if (!/^Reply-To: /im.test(header)) {
         match = header.match(/^From: (.*\r?\n)/m)
