@@ -112,6 +112,21 @@ on that and the current send-out limit.
 
 Check your current SES send-out limit and modify the constant `const MAXIMUM_SEND_RATE` accordingly. By default it's set to 14.
 
+### Email rewrite rules
+
+This example is using external RESTful API to check whether the recipient exists and what should be the new, rewritten
+address.
+
+We included a simple `api-view.js` Lambda function that runs via API Gateway and checks whether email exists in the 
+DynamoDB table.
+
+`API_URL` environment variable of `receive.js` refers to this endpoint. For example, we set `API_URL` to 
+`https://api.email.com/aliases/`. Receiving script gets a message addressed to `john@smith.com` and makes a call to
+`https://api.email.com/aliases/john@smith.com`. If it gets a valid response, redirect address is contained in the `alias`
+JSON property of the response. Otherwise, email is considered not to exist.
+
+Feel free to add more drivers.
+
 ## Credits
 
 Receiving script is based on [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) which is in turn based on [https://github.com/eleven41/aws-lambda-send-ses-email](https://github.com/eleven41/aws-lambda-send-ses-email)
