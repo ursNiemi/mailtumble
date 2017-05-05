@@ -127,6 +127,24 @@ JSON property of the response. Otherwise, email is considered not to exist.
 
 Feel free to add more drivers.
 
+### Processing complaints and bounces
+
+In order to receive bounce and complaint notifications, go to Domains in SES, and click on your verified domain.
+You can choose 3 SNS topics – bounces, complaints and deliveries:
+ 
+![MailTumble SES Notifications](https://www.mysenko.com/images/mailtumble-ses-notifications.jpg)
+
+Create corresponding SNS topics, then decide how do you want to process them – synchronously or asynchronously.
+
+Async solution is to attach a Lambda function to each SNS topic that will mark email as failing in the email repository
+(eg. DynamoDB). Sync solution is to create SQS queues that are subscribed to these SNS topics, then process these queues
+using scheduled Lambda functions or your worker.
+
+Our recommended solution is to rely on external API – process bounces/complaints asynchronously and make API calls (PUT)
+that mark emails as "dead".
+
+Then, `receive.js` may add a rule to ignore emails that are known to be broken.
+
 ## Credits
 
 Receiving script is based on [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) which is in turn based on [https://github.com/eleven41/aws-lambda-send-ses-email](https://github.com/eleven41/aws-lambda-send-ses-email)
