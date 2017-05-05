@@ -81,15 +81,15 @@ that forwards messages to an SQS queue, and then you invoke Lambda function to p
 3) Ensure this Lambda function has read permissions to the S3 bucket and publish permissions to the SQS queue.
 4) Set the following environment variables for your receiving Lambda function:
 
-*S3_BUCKET_NAME* S3 bucket name where emails will be stored
+**S3_BUCKET_NAME** S3 bucket name where emails will be stored
 
-*S3_KEY_PREFIX* Is the bucket prefix (path), empty by default
+**S3_KEY_PREFIX** Is the bucket prefix (path), empty by default
 
-*QUEUE_URL* Full URL to the SQS queue where processed messages will be pushed
+**QUEUE_URL** Full URL to the SQS queue where processed messages will be pushed
 
-*API_URL* RESTful endpoint to verify emails (see details below)
+**API_URL** RESTful endpoint to verify emails (see details below)
 
-*FROM_EMAIL* From email will be rewritten to this value
+**FROM_EMAIL** From email will be rewritten to this value
 
 In most cases you don't need to modify the function itself, configuration is done using variables.
 
@@ -101,11 +101,11 @@ Sending is done by a single multi-thread Lambda function `send-out.js` that shou
 2) Make sure your sending Lambda function has read access to S3 bucket, read access to the SQS queue, send access to SES.
 3) Set the following environment variables for your sending Lambda function:
 
-*S3_BUCKET_NAME* S3 bucket name where emails are stored
+**S3_BUCKET_NAME** S3 bucket name where emails are stored
 
-*S3_KEY_PREFIX* Is the bucket prefix (path), empty by default
+**S3_KEY_PREFIX** Is the bucket prefix (path), empty by default
 
-*QUEUE_URL* Full URL to the SQS queue from where messages will be pulled
+**QUEUE_URL** Full URL to the SQS queue from where messages will be pulled
 
 Every time this function starts, it first checks the number of messages in the queue – then it decides the pace based
 on that and the current send-out limit. 
