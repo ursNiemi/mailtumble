@@ -59,9 +59,56 @@ messages. If the queue is large, run as many threads as you can afford (accordin
 
 - External lookup drivers (DynamoDB, MySQL, RESTful, etc)
 
+## Installation
+
+### Receiving part
+
+Receiving is done by a single Node.js script `receive.js`. This function is triggered by SES.
+
+1) Add your domain(s) in AWS Console in SES (Simple Email Service)
+2) Add a rule set (see Email Receiving in the left sidebar) as follows:
+  
+![MailTumble SES Ruleset](https://www.mysenko.com/images/mailtumble-ses-ruleset.jpg)
+  
+As you can see, first we save the incoming message to an S3 bucket (we have to do this because larger email messages
+won't fit in SNS/SQS), then we trigger a Lambda function that parses the message.
+  
+The bottleneck here is the limit of concurrent Lambda invocations. By default it's 1024.
+  
+Therefore, you want/plan to receive more than 1024 messages per second, you may want to replace second step with SNS topic
+that forwards messages to an SQS queue, and then you invoke Lambda function to process the queue synchronously.  
+
+3) Ensure this Lambda function has read permissions to the S3 bucket and publish permissions to the SQS queue.
+4) Set the following environment variables for your receiving Lambda function:
+
+*S3_BUCKET_NAME* S3 bucket name where emails will be stored
+*S3_KEY_PREFIX* Is the bucket prefix (path), empty by default
+*QUEUE_URL* Full URL to the SQS queue where processed messages will be pushed
+*API_URL* RESTful endpoint to verify emails (see details below)
+*FROM_EMAIL* From email will be rewritten to this value
+
+In most cases you don't need to modify the function itself, configuration is done using variables.
+
+### Sending part
+
+Sending is done by a single multi-thread Lambda function `send-out.js` that should run every minute triggered by CloudWatch schedule.
+
+1) Ensure your new From address is verified in SES.
+2) Make sure your sending Lambda function has read access to S3 bucket, read access to the SQS queue, send access to SES.
+3) Set the following environment variables for your sending Lambda function:
+
+*S3_BUCKET_NAME* S3 bucket name where emails are stored
+*S3_KEY_PREFIX* Is the bucket prefix (path), empty by default
+*QUEUE_URL* Full URL to the SQS queue from where messages will be pulled
+
+Every time this function starts, it first checks the number of messages in the queue – then it decides the pace based
+on that and the current send-out limit. 
+
+Check your current SES send-out limit and modify the constant `const MAXIMUM_SEND_RATE` accordingly. By default it's set to 14.
+
 ## Credits
 
-Based on [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) which is in turn based on [https://github.com/eleven41/aws-lambda-send-ses-email](https://github.com/eleven41/aws-lambda-send-ses-email)
+Receiving script is based on [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) which is in turn based on [https://github.com/eleven41/aws-lambda-send-ses-email](https://github.com/eleven41/aws-lambda-send-ses-email)
 
 ## License
 
