@@ -145,6 +145,16 @@ that mark emails as "dead".
 
 Then, `receive.js` may add a rule to ignore emails that are known to be broken.
 
+## ToDo
+
+- Add tests
+
+- Add extra API methods
+
+- Include JWT authentication in the API methods
+
+- Add extra drivers for email lookup
+
 ## Credits
 
 Receiving script is based on [https://github.com/arithmetric/aws-lambda-ses-forwarder](https://github.com/arithmetric/aws-lambda-ses-forwarder) which is in turn based on [https://github.com/eleven41/aws-lambda-send-ses-email](https://github.com/eleven41/aws-lambda-send-ses-email)
