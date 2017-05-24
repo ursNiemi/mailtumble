@@ -72,6 +72,10 @@ function rewriteRecipients(data) {
                     res.on('end', () => {
                         let body = chunks.join('')
                         let data = JSON.parse(body)
+
+                        if (data.count_complaint) return resolve(null)
+                        if (parseInt(data.count_bounce) > 3) return resolve(null)
+
                         resolve(data.email)
                     });
                 }).on('error', function(e) {
