@@ -1,14 +1,17 @@
-"use strict"
+"use strict";
 
 var AWS = require("aws-sdk")
-var https = require('https');
+var https = require('https')
+const url = require('url')
 
 const API_URL = process.env.API_URL
+const API_TOKEN = process.env.API_TOKEN
 const QUEUE_URL = process.env.QUEUE_URL
 const FROM_EMAIL = process.env.FROM_EMAIL
 const SUBJECT_PREFIX = process.env.SUBJECT_PREFIX || ''
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME
 const S3_KEY_PREFIX = process.env.S3_KEY_PREFIX || ''
+const UNSUBSCRIBE_URL = process.env.UNSUBSCRIBE_URL || 'https://subscriptions.mailtumble.com/unsubscribe'
 
 /**
  * Parses the SES event record provided for the `mail` and `receipients` data.
@@ -57,10 +60,17 @@ function rewriteRecipients(data) {
         promises.push(
             new Promise((resolve, reject) => {
                 var origEmailKey = origEmail.toLowerCase()
-                let url = `${API_URL}${origEmailKey}`
 
-                https.get(url, function(res) {
-                    if (res.statusCode == 404) {
+                const options = url.parse(`${API_URL}/aliases/${origEmailKey}`);
+
+                options.method = 'GET'
+                options.headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_TOKEN}`
+                }
+
+                const getReq = https.request(options, function(res) {
+                    if (res.statusCode != 200) {
                         resolve(null)
                         return
                     }
@@ -75,6 +85,7 @@ function rewriteRecipients(data) {
 
                         if (data.count_complaint) return resolve(null)
                         if (parseInt(data.count_bounce) > 3) return resolve(null)
+                        if (data.optout) return resolve(null)
 
                         resolve(data.email)
                     });
@@ -83,6 +94,8 @@ function rewriteRecipients(data) {
 
                     resolve(null)
                 });
+
+                getReq.end();
             })
         )
     })
@@ -224,6 +237,13 @@ function processHeaders(data) {
     // These signatures will likely be invalid anyways, since the From
     // header was modified.
     header = header.replace(/^DKIM-Signature: .*\r?\n(\s+.*\r?\n)*/gm, "")
+
+    let email = data.recipients.find(recipient => recipient.match(/@mailtumble.com$/))
+
+    if (email) {
+        header = header + `List-Unsubscribe: <${UNSUBSCRIBE_URL}?email=${email}>
+`
+    }
 
     data.newHeader = header
 
