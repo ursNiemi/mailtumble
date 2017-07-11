@@ -7,7 +7,6 @@ const url = require('url')
 const API_URL = process.env.API_URL
 const API_TOKEN = process.env.API_TOKEN
 const QUEUE_URL = process.env.QUEUE_URL
-const FROM_EMAIL = process.env.FROM_EMAIL
 const SUBJECT_PREFIX = process.env.SUBJECT_PREFIX || ''
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME
 const S3_KEY_PREFIX = process.env.S3_KEY_PREFIX || ''
@@ -174,12 +173,13 @@ exports.fetchMessage = function fetchMessage(data) {
  * @return {object} - Promise resolved with data.
  */
 exports.processHeaders = function processHeaders(data) {
-    var match = data.emailData.match(/^((?:.+\r?\n)*)(\r?\n(?:.*\s+)*)/m)
-    var header = match && match[1] ? match[1] : data.emailData
+    var match = data.emailData.match(/^((?:.+\r?\n)*)(\r?\n(?:.*\s+)*)/m);
+    var header = match && match[1] ? match[1] : data.emailData;
+    var body = match && match[2] ? match[2] : '';
 
     // Add "Reply-To:" with the "From" address if it doesn't already exists
     if (!/^Reply-To: /im.test(header)) {
-        match = header.match(/^From: (.*\r?\n)/m)
+        match = header.match(/^From: (.*(?:\r?\n\s+.*)*\r?\n)/m);
         var from = match && match[1] ? match[1] : ""
         if (from) {
             header = header + "Reply-To: " + from
@@ -199,22 +199,14 @@ exports.processHeaders = function processHeaders(data) {
     // SES does not allow sending messages from an unverified address,
     // so replace the message's "From:" header with the original
     // recipient (which is a verified domain)
-    header = header.replace(/^From: (.*)/gm, function(match, from) {
+    header = header.replace(/^From: (.*(?:\r?\n\s+.*)*)/mg, function(match, from) {
         var fromText
-        if (FROM_EMAIL) {
-            fromText =
-                "From: " +
-                from.replace(/<(.*)>/, "").trim() +
-                " <" +
-                FROM_EMAIL +
-                ">"
+        if (process.env.FROM_EMAIL) {
+            fromText = 'From: ' + from.replace(/<(.*)>/, '').trim() +
+                ' <' + process.env.FROM_EMAIL + '>';
         } else {
-            fromText =
-                "From: " +
-                from.replace("<", "at ").replace(">", "") +
-                " <" +
-                data.originalRecipient +
-                ">"
+            fromText = 'From: ' + from.replace('<', 'at ').replace('>', '') +
+                ' <' + data.originalRecipient + '>';
         }
         return fromText
     })
@@ -232,6 +224,9 @@ exports.processHeaders = function processHeaders(data) {
     // Remove Sender header.
     header = header.replace(/^Sender: (.*)\r?\n/gm, "")
 
+    // Remove Message-ID header.
+    header = header.replace(/^Message-ID: (.*)\r?\n/mig, '');
+
     // Remove all DKIM-Signature headers to prevent triggering an
     // "InvalidParameterValue: Duplicate header 'DKIM-Signature'" error.
     // These signatures will likely be invalid anyways, since the From
@@ -246,6 +241,7 @@ exports.processHeaders = function processHeaders(data) {
     }
 
     data.newHeader = header
+    data.emailData = header + body;
 
     return Promise.resolve(data)
 }
