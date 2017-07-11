@@ -173,7 +173,7 @@ exports.fetchMessage = function fetchMessage(data) {
  *
  * @return {object} - Promise resolved with data.
  */
-function processHeaders(data) {
+exports.processHeaders = function processHeaders(data) {
     var match = data.emailData.match(/^((?:.+\r?\n)*)(\r?\n(?:.*\s+)*)/m)
     var header = match && match[1] ? match[1] : data.emailData
 
