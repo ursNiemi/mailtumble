@@ -20,7 +20,7 @@ const UNSUBSCRIBE_URL = process.env.UNSUBSCRIBE_URL || 'https://subscriptions.ma
  *
  * @return {object} - Promise resolved with data.
  */
-function parseEvent(data) {
+exports.parseEvent = function parseEvent(data) {
     // Validate characteristics of a SES event record.
     if (
         !data.event ||
@@ -128,7 +128,7 @@ function rewriteRecipients(data) {
  *
  * @return {object} - Promise resolved with data.
  */
-function fetchMessage(data) {
+exports.fetchMessage = function fetchMessage(data) {
     const key = `${S3_KEY_PREFIX}${data.email.messageId}`
 
     data.log({
